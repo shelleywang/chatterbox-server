@@ -11,8 +11,68 @@ this file and include it in basic-server.js so that it actually works.
 *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html.
 
 **************************************************************/
+var fs = require('fs');
+
+var storedMessages = require("./messages.json");
+
 
 var requestHandler = function(request, response) {
+  console.log("Serving request type " + request.method + " for url " + request.url);
+
+
+  if (request.url === '/classes/messages') {
+    if (request.method === 'OPTIONS') {
+      console.log('IN OPTIONS')
+      var statusCode = 200;
+      var headers = defaultCorsHeaders;
+      response.writeHead(statusCode, headers);
+
+      response.end();
+
+    } else if (request.method === 'GET') {
+    
+      var statusCode = 200;
+      var headers = defaultCorsHeaders;
+      response.writeHead(statusCode, headers);
+
+      headers['Content-Type'] = "application/json";
+
+      response.end(JSON.stringify(storedMessages));
+
+    } else if (request.method === 'POST') {
+      var jsonString = '';
+      request.on('data', function(data) {
+        jsonString += data;
+        // console.log(jsonString);
+      })
+      request.on('end', function() {
+        var newMessage = JSON.parse(jsonString);
+        storedMessages.results.push(newMessage);
+        fs.writeFile( "messages.json", JSON.stringify( storedMessages ), "utf8", function(err) {
+          if (err) {
+            console.log(err);
+          }
+        });
+
+        var statusCode = 201;
+        var headers = defaultCorsHeaders;
+        response.writeHead(statusCode, headers);
+        response.end(JSON.stringify(storedMessages));
+      })
+
+
+    }
+  } else {
+    response.writeHead(404,{})
+    response.end();
+  }
+};
+
+
+
+
+
+var requestHandlerOriginal = function(request, response) {
   // Request and Response come from node's http module.
   //
   // They include information about both the incoming request, such as
@@ -71,3 +131,4 @@ var defaultCorsHeaders = {
   "access-control-max-age": 10 // Seconds.
 };
 
+exports.requestHandler = requestHandler;
