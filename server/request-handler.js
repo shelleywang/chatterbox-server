@@ -58,7 +58,7 @@ var requestHandler = function(request, response) {
         var statusCode = 201;
         var headers = defaultCorsHeaders;
         response.writeHead(statusCode, headers);
-        response.end(JSON.stringify(storedMessages));
+        response.end(JSON.stringify(storedMessages)); 
       })
     }
   } else if (pathnamesplit[1] === "classes") {
@@ -131,16 +131,6 @@ var requestHandler = function(request, response) {
         console.log(file,'file dne')
       }  
     });
-
-    // fs.readFile('./client/client/index.html', 'binary', function(error, content) {
-    //   if (error) {
-    //     response.writeHead(404);
-    //     response.end();
-    //   } else {
-    //     response.writeHead(200, {'Content-Type': 'text/html'});
-    //     response.end(content);
-    //   }
-    // });
   } 
   // else {
   //   response.writeHead(404,{})
