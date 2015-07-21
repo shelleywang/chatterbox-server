@@ -12,24 +12,27 @@ this file and include it in basic-server.js so that it actually works.
 
 **************************************************************/
 var fs = require('fs');
+var url = require('url');
 
 var storedMessages = require("./messages.json");
 
 
 var requestHandler = function(request, response) {
   console.log("Serving request type " + request.method + " for url " + request.url);
+  var pathname = url.parse(request.url).pathname;
+
+  var pathnamesplit = pathname.split('/');
 
 
-  if (request.url === '/classes/messages') {
-    if (request.method === 'OPTIONS') {
-      console.log('IN OPTIONS')
-      var statusCode = 200;
-      var headers = defaultCorsHeaders;
-      response.writeHead(statusCode, headers);
+  if (request.method === 'OPTIONS') {
+    var statusCode = 200;
+    var headers = defaultCorsHeaders;
+    response.writeHead(statusCode, headers);
 
-      response.end();
+    response.end();
 
-    } else if (request.method === 'GET') {
+  } else if (pathname === '/classes/messages') {
+    if (request.method === 'GET') {
     
       var statusCode = 200;
       var headers = defaultCorsHeaders;
@@ -62,6 +65,47 @@ var requestHandler = function(request, response) {
 
 
     }
+  } else if (pathnamesplit[1] === "classes") {
+    var roomname = pathnamesplit[2];
+
+    if (request.method === 'GET') {
+      var statusCode = 200;
+      var headers = defaultCorsHeaders;
+      headers['Content-Type'] = "application/json";
+      response.writeHead(statusCode, headers);
+      
+      var filteredMessages= {results:[]};
+
+      filteredMessages.results = storedMessages.results.filter(function(message) {
+        return message.roomname === roomname;
+      });
+
+      response.end(JSON.stringify(filteredMessages));
+
+    } else if (request.method === 'POST') {
+      var jsonString = '';
+      request.on('data', function(data) {
+        jsonString += data;
+      })
+      request.on('end', function() {
+        var newMessage = JSON.parse(jsonString);
+        newMessage.roomname = roomname;
+        storedMessages.results.push(newMessage);
+        fs.writeFile( "messages.json", JSON.stringify( storedMessages ), "utf8", function(err) {
+          if (err) {
+            console.log(err);
+          }
+        });
+
+        var statusCode = 201;
+        var headers = defaultCorsHeaders;
+        response.writeHead(statusCode, headers);
+        response.end(JSON.stringify(storedMessages));
+      })
+
+
+    }
+
   } else {
     response.writeHead(404,{})
     response.end();

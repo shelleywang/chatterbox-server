@@ -63,7 +63,8 @@ $(function() {
         contentType: 'application/json',
         success: function(data) {
           console.log('chatterbox: Messages fetched');
-              console.log(data.results)
+          // console.log(data.results)
+          app.stopSpinner();
           // Don't bother if we have nothing to work with
           if (!data.results || !data.results.length) { return; }
 
