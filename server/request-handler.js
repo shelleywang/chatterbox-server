@@ -13,22 +13,21 @@ this file and include it in basic-server.js so that it actually works.
 **************************************************************/
 var fs = require('fs');
 var url = require('url');
-
 var storedMessages = require("./messages.json");
+
 
 
 var requestHandler = function(request, response) {
   console.log("Serving request type " + request.method + " for url " + request.url);
+
   var pathname = url.parse(request.url).pathname;
-
+  console.log(pathname);
   var pathnamesplit = pathname.split('/');
-
 
   if (request.method === 'OPTIONS') {
     var statusCode = 200;
     var headers = defaultCorsHeaders;
     response.writeHead(statusCode, headers);
-
     response.end();
 
   } else if (pathname === '/classes/messages') {
@@ -46,12 +45,11 @@ var requestHandler = function(request, response) {
       var jsonString = '';
       request.on('data', function(data) {
         jsonString += data;
-        // console.log(jsonString);
       })
       request.on('end', function() {
         var newMessage = JSON.parse(jsonString);
         storedMessages.results.push(newMessage);
-        fs.writeFile( "messages.json", JSON.stringify( storedMessages ), "utf8", function(err) {
+        fs.writeFile( "server/messages.json", JSON.stringify( storedMessages ), "utf8", function(err) {
           if (err) {
             console.log(err);
           }
@@ -62,8 +60,6 @@ var requestHandler = function(request, response) {
         response.writeHead(statusCode, headers);
         response.end(JSON.stringify(storedMessages));
       })
-
-
     }
   } else if (pathnamesplit[1] === "classes") {
     var roomname = pathnamesplit[2];
@@ -107,9 +103,49 @@ var requestHandler = function(request, response) {
     }
 
   } else {
-    response.writeHead(404,{})
-    response.end();
-  }
+    var file = pathname === '/' ? './client/client/index.html' : './client'+pathname 
+    var ext = pathname.split('.')[1];
+    var type = '';
+    var fileExtensions = {
+            'html':'text/html',
+            'css':'text/css',
+            'js':'text/javascript',
+            'json':'application/json',
+            'png':'image/png',
+            'jpg':'image/jpg',
+            'gif':'image/gif',
+            'wav':'audio/wav'};
+    for (var i in fileExtensions) {
+      if(ext === i) {    
+        type = fileExtensions[i];
+        break;
+      }
+    }
+
+    fs.exists(file, function(exists) {
+      if(exists) {
+        response.writeHead(200, { 'Content-Type': type })
+        fs.createReadStream(file).pipe(response)
+        console.log('served '+file)
+      } else {
+        console.log(file,'file dne')
+      }  
+    });
+
+    // fs.readFile('./client/client/index.html', 'binary', function(error, content) {
+    //   if (error) {
+    //     response.writeHead(404);
+    //     response.end();
+    //   } else {
+    //     response.writeHead(200, {'Content-Type': 'text/html'});
+    //     response.end(content);
+    //   }
+    // });
+  } 
+  // else {
+  //   response.writeHead(404,{})
+  //   response.end();
+  // }
 };
 
 
